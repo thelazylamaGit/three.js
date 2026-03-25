@@ -560,6 +560,13 @@ class NodeMaterialObserver {
 
 			}
 
+			geometryData._equal = true;
+
+		} else {
+
+			if ( geometryData._equal === false ) return false;
+
+		}
 
 		// morph targets
 
@@ -22680,6 +22687,33 @@ class Line2NodeMaterial extends NodeMaterial {
 
 	}
 
+	/**
+	 * Copies the properties of the given material to this instance.
+	 *
+	 * @param {Line2NodeMaterial} source - The material to copy.
+	 * @return {Line2NodeMaterial} A reference to this material.
+	 */
+	copy( source ) {
+
+		super.copy( source );
+
+		this.vertexColors = source.vertexColors;
+		this.dashOffset = source.dashOffset;
+
+		this.lineColorNode = source.lineColorNode;
+		this.offsetNode = source.offsetNode;
+		this.dashScaleNode = source.dashScaleNode;
+		this.dashSizeNode = source.dashSizeNode;
+		this.gapSizeNode = source.gapSizeNode;
+
+		this._useDash = source._useDash;
+		this._useAlphaToCoverage = source._useAlphaToCoverage;
+		this._useWorldUnits = source._useWorldUnits;
+
+		return this;
+
+	}
+
 }
 
 const _defaultValues$a = /*@__PURE__*/ new MeshNormalMaterial();
@@ -38489,28 +38523,6 @@ class StorageTextureNode extends TextureNode {
 	}
 
 	/**
-	 * Generates the snippet for the storage texture.
-	 *
-	 * @param {NodeBuilder} builder - The current node builder.
-	 * @param {string} textureProperty - The texture property.
-	 * @param {string} uvSnippet - The uv snippet.
-	 * @param {?string} levelSnippet - The level snippet.
-	 * @param {?string} biasSnippet - The bias snippet.
-	 * @param {?string} depthSnippet - The depth snippet.
-	 * @param {?string} compareSnippet - The compare snippet.
-	 * @param {?Array<string>} gradSnippet - The grad snippet.
-	 * @param {?string} offsetSnippet - The offset snippet.
-	 * @return {string} The generated code snippet.
-	 */
-	generateSnippet( builder, textureProperty, uvSnippet, levelSnippet, biasSnippet, depthSnippet, compareSnippet, gradSnippet, offsetSnippet ) {
-
-		const texture = this.value;
-
-		return builder.generateStorageTextureLoad( texture, textureProperty, uvSnippet, levelSnippet, depthSnippet, offsetSnippet );
-
-	}
-
-	/**
 	 * Convenience method for configuring a read/write node access.
 	 *
 	 * @return {StorageTextureNode} A reference to this node.
@@ -39556,14 +39568,22 @@ class PassNode extends TempNode {
 		 */
 		this._height = 1;
 
-		const depthTexture = new DepthTexture();
-		depthTexture.isRenderTargetTexture = true;
-		//depthTexture.type = FloatType;
-		depthTexture.name = 'depth';
-
 		const renderTarget = new RenderTarget( this._width * this._pixelRatio, this._height * this._pixelRatio, { type: HalfFloatType, ...options, } );
 		renderTarget.texture.name = 'output';
-		renderTarget.depthTexture = depthTexture;
+
+		let depthTexture = null;
+
+		if ( PassNode.DEPTH || options.depthBuffer !== false ) {
+
+			depthTexture = new DepthTexture();
+			depthTexture.isRenderTargetTexture = true;
+			//depthTexture.type = FloatType;
+			depthTexture.name = 'depth';
+
+			renderTarget.depthTexture = depthTexture;
+
+		}
+
 
 		/**
 		 * The pass's render target.
@@ -39615,12 +39635,17 @@ class PassNode extends TempNode {
 		 * A dictionary holding the internal result textures.
 		 *
 		 * @private
-		 * @type {Object<string, Texture>}
+		 * @type {{ output: Texture, depth?: DepthTexture }}
 		 */
 		this._textures = {
-			output: renderTarget.texture,
-			depth: depthTexture
+			output: renderTarget.texture
 		};
+
+		if ( depthTexture !== null ) {
+
+			this._textures.depth = depthTexture;
+
+		}
 
 		/**
 		 * A dictionary holding the internal texture nodes.
@@ -40062,7 +40087,7 @@ class PassNode extends TempNode {
 
 		this.renderTarget.texture.type = renderer.getOutputBufferType();
 
-		if ( renderer.reversedDepthBuffer === true ) {
+		if ( renderer.reversedDepthBuffer === true && this.renderTarget.depthTexture !== null ) {
 
 			this.renderTarget.depthTexture.type = FloatType;
 
