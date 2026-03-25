@@ -295,6 +295,12 @@
 		"webgl_worker_offscreencanvas",
 		"webgl_performance"
 	],
+	"webgl / tsl": [
+		"webgl_tsl_shadowmap",
+		"webgl_tsl_skinning",
+		"webgl_tsl_clearcoat",
+		"webgl_tsl_instancing"
+	],
 	"webgpu (wip)": [
 		"webgpu_animation_retargeting",
 		"webgpu_animation_retargeting_readyplayer",
@@ -308,6 +314,7 @@
 		"webgpu_centroid_sampling",
 		"webgpu_clearcoat",
 		"webgpu_clipping",
+		"webgpu_compile_async",
 		"webgpu_compute_audio",
 		"webgpu_compute_birds",
 		"webgpu_compute_cloth",
@@ -345,6 +352,7 @@
 		"webgpu_lightprobe",
 		"webgpu_lightprobe_cubecamera",
 		"webgpu_lights_custom",
+		"webgpu_lights_dynamic",
 		"webgpu_lights_ies_spotlight",
 		"webgpu_lights_phong",
 		"webgpu_lights_physical",
@@ -471,6 +479,7 @@
 		"webgpu_tsl_earth",
 		"webgpu_tsl_editor",
 		"webgpu_tsl_galaxy",
+		"webgpu_tsl_graph",
 		"webgpu_tsl_halftone",
 		"webgpu_tsl_interoperability",
 		"webgpu_tsl_procedural_terrain",
@@ -524,8 +533,8 @@
 		"webxr_xr_dragging",
 		"webxr_xr_dragging_custom_depth",
 		"webxr_xr_haptics",
-		"webxr_xr_paint",
-		"webxr_xr_sculpt"
+		"webxr_xr_marchingcubes",
+		"webxr_xr_paint"
 	],
 	"games": [
 		"games_fps"

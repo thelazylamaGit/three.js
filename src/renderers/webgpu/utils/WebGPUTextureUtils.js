@@ -463,12 +463,12 @@ class WebGPUTextureUtils {
 		if ( stencil ) {
 
 			format = DepthStencilFormat;
-			type = UnsignedInt248Type;
+			type = backend.renderer.reversedDepthBuffer === true ? FloatType : UnsignedInt248Type;
 
 		} else if ( depth ) {
 
 			format = DepthFormat;
-			type = UnsignedIntType;
+			type = backend.renderer.reversedDepthBuffer === true ? FloatType : UnsignedIntType;
 
 		}
 
@@ -538,9 +538,23 @@ class WebGPUTextureUtils {
 
 		} else if ( texture.isArrayTexture || texture.isDataArrayTexture || texture.isData3DTexture ) {
 
-			for ( let i = 0; i < options.image.depth; i ++ ) {
+			if ( texture.layerUpdates && texture.layerUpdates.size > 0 ) {
 
-				this._copyBufferToTexture( options.image, textureData.texture, textureDescriptorGPU, i, texture.flipY, i );
+				for ( const layerIndex of texture.layerUpdates ) {
+
+					this._copyBufferToTexture( options.image, textureData.texture, textureDescriptorGPU, layerIndex, texture.flipY, layerIndex );
+
+				}
+
+				texture.clearLayerUpdates();
+
+			} else {
+
+				for ( let i = 0; i < options.image.depth; i ++ ) {
+
+					this._copyBufferToTexture( options.image, textureData.texture, textureDescriptorGPU, i, texture.flipY, i );
+
+				}
 
 			}
 

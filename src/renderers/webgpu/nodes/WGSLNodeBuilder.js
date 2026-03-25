@@ -230,6 +230,14 @@ class WGSLNodeBuilder extends NodeBuilder {
 		 */
 		this.scopedArrays = new Map();
 
+		/**
+		 * A flag that indicates that early returns are allowed.
+		 *
+		 * @type {boolean}
+		 * @default true
+		 */
+		this.allowEarlyReturns = true;
+
 	}
 
 	/**
@@ -708,7 +716,7 @@ class WGSLNodeBuilder extends NodeBuilder {
 	isUnfilterable( texture ) {
 
 		return this.getComponentTypeFromTexture( texture ) !== 'float' ||
-			( ! this.isAvailable( 'float32Filterable' ) && texture.isDataTexture === true && texture.type === FloatType ) ||
+			( ! this.isAvailable( 'float32Filterable' ) && texture.type === FloatType ) ||
 			( this.isSampleCompare( texture ) === false && texture.minFilter === NearestFilter && texture.magFilter === NearestFilter ) ||
 			this.renderer.backend.utils.getTextureSampleData( texture ).primarySamples > 1;
 
@@ -1799,13 +1807,15 @@ ${ flowData.code }
 			const varyings = this.varyings;
 			const vars = this.vars[ shaderStage ];
 
+			let varyingIndex = 0;
+
 			for ( let index = 0; index < varyings.length; index ++ ) {
 
 				const varying = varyings[ index ];
 
 				if ( varying.needsInterpolation ) {
 
-					let attributesSnippet = `@location( ${index} )`;
+					let attributesSnippet = `@location( ${ varyingIndex ++ } )`;
 
 					if ( varying.interpolationType ) {
 
@@ -2116,7 +2126,7 @@ ${ flowData.code }
 
 						} else {
 
-							let structSnippet = '\t@location(0) color: vec4<f32>';
+							let structSnippet = '\t@location( 0 ) color: vec4<f32>';
 
 							const builtins = this.getBuiltins( 'output' );
 
@@ -2277,17 +2287,6 @@ ${ flowData.code }
 		}
 
 		return result;
-
-	}
-
-	/**
-	 * Returns the maximum uniform buffer size limit.
-	 *
-	 * @return {number} The maximum uniform buffer size in bytes.
-	 */
-	getUniformBufferLimit() {
-
-		return this.renderer.backend.device.limits.maxUniformBufferBindingSize;
 
 	}
 
