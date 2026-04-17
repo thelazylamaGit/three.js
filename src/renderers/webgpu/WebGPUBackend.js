@@ -2553,30 +2553,8 @@ class WebGPUBackend extends Backend {
 	 */
 	copyBufferToBuffer( srcAttribute, dstAttribute, size = null, srcOffset = 0, dstOffset = 0 ) {
 
-		const getOrCreateBuffer = ( attribute ) => {
-
-			const data = this.get( attribute );
-
-			if ( data.buffer === undefined ) {
-
-				if ( attribute.isStorageBufferAttribute || attribute.isStorageInstancedBufferAttribute ) {
-
-					this.createStorageAttribute( attribute );
-
-				} else {
-
-					this.createAttribute( attribute );
-
-				}
-
-			}
-
-			return data.buffer;
-
-		};
-
-		const sourceGPU = getOrCreateBuffer( srcAttribute );
-		const destinationGPU = getOrCreateBuffer( dstAttribute );
+		const sourceGPU = this.get( srcAttribute ).buffer;
+		const destinationGPU = this.get( dstAttribute ).buffer;
 
 		if ( sourceGPU === undefined || destinationGPU === undefined ) {
 
@@ -2609,7 +2587,7 @@ class WebGPUBackend extends Backend {
 		}
 
 		const encoder = this.device.createCommandEncoder( {
-			label: 'copyBufferToBuffer_' + srcAttribute.id + '_' + dstAttribute.id,
+			label: 'copyBufferToBuffer_' + srcAttribute.id + '_' + dstAttribute.id
 		} );
 
 		if ( size === null ) {
