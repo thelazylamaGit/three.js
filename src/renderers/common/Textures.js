@@ -71,30 +71,24 @@ class Textures extends DataMap {
 		const mipWidth = size.width >> activeMipmapLevel;
 		const mipHeight = size.height >> activeMipmapLevel;
 
-		const useDepthTexture = renderTarget.depthTexture !== null || renderTarget.depthBuffer === true || renderTarget.stencilBuffer === true;
-		let depthTexture = null;
+		let depthTexture = renderTarget.depthTexture || depthTextureMips[ activeMipmapLevel ];
+		const useDepthTexture = renderTarget.depthBuffer === true || renderTarget.stencilBuffer === true;
 
 		let textureNeedsUpdate = false;
 
-		if ( useDepthTexture ) {
+		if ( depthTexture === undefined && useDepthTexture ) {
 
-			depthTexture = renderTarget.depthTexture || depthTextureMips[ activeMipmapLevel ];
+			depthTexture = new DepthTexture();
 
-			if ( depthTexture === undefined ) {
+			depthTexture.format = renderTarget.stencilBuffer ? DepthStencilFormat : DepthFormat;
+			depthTexture.type = renderTarget.stencilBuffer ? UnsignedInt248Type : UnsignedIntType; // FloatType
+			depthTexture.image.width = mipWidth;
+			depthTexture.image.height = mipHeight;
+			depthTexture.image.depth = size.depth;
+			depthTexture.renderTarget = renderTarget;
+			depthTexture.isArrayTexture = renderTarget.multiview === true && size.depth > 1;
 
-				depthTexture = new DepthTexture();
-
-				depthTexture.format = renderTarget.stencilBuffer ? DepthStencilFormat : DepthFormat;
-				depthTexture.type = renderTarget.stencilBuffer ? UnsignedInt248Type : UnsignedIntType; // FloatType
-				depthTexture.image.width = mipWidth;
-				depthTexture.image.height = mipHeight;
-				depthTexture.image.depth = size.depth;
-				depthTexture.renderTarget = renderTarget;
-				depthTexture.isArrayTexture = renderTarget.multiview === true && size.depth > 1;
-
-				depthTextureMips[ activeMipmapLevel ] = depthTexture;
-
-			}
+			depthTextureMips[ activeMipmapLevel ] = depthTexture;
 
 		}
 
@@ -134,9 +128,6 @@ class Textures extends DataMap {
 			renderTargetData.sampleCount = sampleCount;
 
 		}
-
-		//
-
 
 		const options = { sampleCount };
 
