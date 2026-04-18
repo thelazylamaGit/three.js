@@ -129,6 +129,9 @@ class Textures extends DataMap {
 
 		}
 
+		//
+
+
 		const options = { sampleCount };
 
 		// XR render targets require no texture updates
