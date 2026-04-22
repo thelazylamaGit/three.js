@@ -60891,6 +60891,33 @@ class Renderer {
 	}
 
 	/**
+	 * Copies data of the given source buffer attribute into a destination buffer attribute.
+	 *
+	 * @param {BufferAttribute} srcAttribute - The source buffer attribute.
+	 * @param {BufferAttribute} dstAttribute - The destination buffer attribute.
+	 * @param {?number} [size=null] - The number of bytes to copy. If `null`, the entire source buffer is copied.
+	 * @param {number} [srcOffset=0] - The source offset in bytes.
+	 * @param {number} [dstOffset=0] - The destination offset in bytes.
+	 */
+	copyBufferToBuffer( srcAttribute, dstAttribute, size = null, srcOffset = 0, dstOffset = 0 ) {
+
+		const getAttributeType = ( attribute ) => {
+
+			if ( attribute.isIndirectStorageBufferAttribute ) return AttributeType.INDIRECT;
+			if ( attribute.isStorageBufferAttribute || attribute.isStorageInstancedBufferAttribute ) return AttributeType.STORAGE;
+
+			return AttributeType.VERTEX;
+
+		};
+
+		this._attributes.update( srcAttribute, getAttributeType( srcAttribute ) );
+		this._attributes.update( dstAttribute, getAttributeType( dstAttribute ) );
+
+		this.backend.copyBufferToBuffer( srcAttribute, dstAttribute, size, srcOffset, dstOffset );
+
+	}
+
+	/**
 	 * Reads pixel data from the given render target.
 	 *
 	 * @async
@@ -64860,6 +64887,18 @@ class Backend {
 	copyFramebufferToTexture( /*texture, renderContext, rectangle*/ ) {}
 
 	// attributes
+
+	/**
+	 * Copies data of the given source buffer attribute to the given destination buffer attribute.
+	 *
+	 * @abstract
+	 * @param {BufferAttribute} srcAttribute - The source buffer attribute.
+	 * @param {BufferAttribute} dstAttribute - The destination buffer attribute.
+	 * @param {?number} [size=null] - The number of bytes to copy. If `null`, the entire source buffer is copied.
+	 * @param {number} [srcOffset=0] - The source offset in bytes.
+	 * @param {number} [dstOffset=0] - The destination offset in bytes.
+	 */
+	copyBufferToBuffer( /* srcAttribute, dstAttribute, size = null, srcOffset = 0, dstOffset = 0 */ ) {}
 
 	/**
 	 * Creates the GPU buffer of a shader attribute.
@@ -71516,6 +71555,40 @@ class WebGLBackend extends Backend {
 	copyFramebufferToTexture( texture, renderContext, rectangle ) {
 
 		this.textureUtils.copyFramebufferToTexture( texture, renderContext, rectangle );
+
+	}
+
+	/**
+	 * Copies data of the given source buffer attribute to the given destination buffer attribute.
+	 *
+	 * Uses WebGL2 `copyBufferSubData`.
+	 *
+	 * @param {BufferAttribute} srcAttribute - The source buffer attribute.
+	 * @param {BufferAttribute} dstAttribute - The destination buffer attribute.
+	 * @param {?number} [size=null] - The number of bytes to copy. If `null`, the entire source buffer is copied.
+	 * @param {number} [srcOffset=0] - The source offset in bytes.
+	 * @param {number} [dstOffset=0] - The destination offset in bytes.
+	 */
+	copyBufferToBuffer( srcAttribute, dstAttribute, size = null, srcOffset = 0, dstOffset = 0 ) {
+
+		const gl = this.gl;
+
+		const srcData = this.get( srcAttribute );
+		const dstData = this.get( dstAttribute );
+
+		const srcGPU = srcData.bufferGPU;
+		const dstGPU = dstData.bufferGPU;
+
+		const byteLength = size === null ? srcData.byteLength : size;
+
+		const prevRead = gl.getParameter( gl.COPY_READ_BUFFER_BINDING );
+		const prevWrite = gl.getParameter( gl.COPY_WRITE_BUFFER_BINDING );
+
+		gl.bindBuffer( gl.COPY_READ_BUFFER, srcGPU );
+		gl.bindBuffer( gl.COPY_WRITE_BUFFER, dstGPU );
+		gl.copyBufferSubData( gl.COPY_READ_BUFFER, gl.COPY_WRITE_BUFFER, srcOffset, dstOffset, byteLength );
+		gl.bindBuffer( gl.COPY_READ_BUFFER, prevRead );
+		gl.bindBuffer( gl.COPY_WRITE_BUFFER, prevWrite );
 
 	}
 
@@ -82626,6 +82699,72 @@ class WebGPUBackend extends Backend {
 			this.device.queue.submit( [ encoder.finish() ] );
 
 		}
+
+	}
+
+	/**
+	 * Copies data of the given source buffer attribute to the given destination buffer attribute.
+	 *
+	 * @param {BufferAttribute} srcAttribute - The source buffer attribute.
+	 * @param {BufferAttribute} dstAttribute - The destination buffer attribute.
+	 * @param {?number} [size=null] - The number of bytes to copy. If `null`, the entire source buffer is copied.
+	 * @param {number} [srcOffset=0] - The source offset in bytes.
+	 * @param {number} [dstOffset=0] - The destination offset in bytes.
+	 */
+	copyBufferToBuffer( srcAttribute, dstAttribute, size = null, srcOffset = 0, dstOffset = 0 ) {
+
+		const sourceGPU = this.get( srcAttribute ).buffer;
+		const destinationGPU = this.get( dstAttribute ).buffer;
+
+		if ( sourceGPU === undefined || destinationGPU === undefined ) {
+
+			error( 'WebGPUBackend: copyBufferToBuffer: Missing GPUBuffer.' );
+			return;
+
+		}
+
+		if ( size === null ) {
+
+			if ( srcOffset !== 0 || dstOffset !== 0 ) {
+
+				error( 'WebGPUBackend: copyBufferToBuffer: Offsets require an explicit size.' );
+				return;
+
+			}
+
+			if ( sourceGPU.size > destinationGPU.size ) {
+
+				error( 'WebGPUBackend: copyBufferToBuffer: Copy region out of bounds.' );
+				return;
+
+			}
+
+		} else if ( srcOffset + size > sourceGPU.size || dstOffset + size > destinationGPU.size ) {
+
+			error( 'WebGPUBackend: copyBufferToBuffer: Copy region out of bounds.' );
+			return;
+
+		}
+
+		const encoder = this.device.createCommandEncoder( {
+			label: 'copyBufferToBuffer_' + srcAttribute.id + '_' + dstAttribute.id
+		} );
+
+		if ( size === null ) {
+
+			encoder.copyBufferToBuffer( sourceGPU, destinationGPU );
+
+		} else if ( srcOffset === 0 && dstOffset === 0 ) {
+
+			encoder.copyBufferToBuffer( sourceGPU, destinationGPU, size );
+
+		} else {
+
+			encoder.copyBufferToBuffer( sourceGPU, srcOffset, destinationGPU, dstOffset, size );
+
+		}
+
+		this.device.queue.submit( [ encoder.finish() ] );
 
 	}
 

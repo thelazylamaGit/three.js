@@ -4793,13 +4793,14 @@ const toneMappingMap = {
 	[ CustomToneMapping ]: 'CUSTOM_TONE_MAPPING'
 };
 
-function WebGLOutput( type, width, height, depth, stencil ) {
+function WebGLOutput( type, width, height, antialias, depth, stencil ) {
 
 	// render targets for scene and post-processing
 	const targetA = new WebGLRenderTarget( width, height, {
 		type: type,
 		depthBuffer: depth,
 		stencilBuffer: stencil,
+		samples: antialias ? 4 : 0,
 		depthTexture: depth ? new DepthTexture( width, height ) : undefined
 	} );
 
@@ -16484,7 +16485,7 @@ class WebGLRenderer {
 
 		if ( _outputBufferType !== UnsignedByteType ) {
 
-			output = new WebGLOutput( _outputBufferType, canvas.width, canvas.height, depth, stencil );
+			output = new WebGLOutput( _outputBufferType, canvas.width, canvas.height, antialias, depth, stencil );
 
 		}
 
