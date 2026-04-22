@@ -2082,17 +2082,7 @@ class EXRLoader extends DataTextureLoader {
 
 		const parseInt64 = function ( dataView, offset ) {
 
-			let int;
-
-			if ( 'getBigInt64' in DataView.prototype ) {
-
-				int = Number( dataView.getBigInt64( offset.value, true ) );
-
-			} else {
-
-				int = dataView.getUint32( offset.value + 4, true ) + Number( dataView.getUint32( offset.value, true ) << 32 );
-
-			}
+			const int = Number( dataView.getBigInt64( offset.value, true ) );
 
 			offset.value += ULONG_SIZE;
 
@@ -2357,8 +2347,9 @@ class EXRLoader extends DataTextureLoader {
 
 				return parseTimecode( dataView, offset );
 
-			} else if ( type === 'preview' ) {
+			} else if ( type === 'preview' || type === 'deepImageState' || type === 'idmanifest' ) {
 
+				// Known metadata-only types: silently skip, they carry no pixel data.
 				offset.value += size;
 				return 'skipped';
 

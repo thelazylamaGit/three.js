@@ -267,7 +267,6 @@ class PassNode extends TempNode {
 
 		}
 
-
 		/**
 		 * The pass's render target.
 		 *
@@ -582,7 +581,7 @@ class PassNode extends TempNode {
 
 			if ( name === 'depth' ) {
 
-				throw new Error( 'PassNode: Depth texture is not available for this pass.' );
+				throw new Error( 'THREE.PassNode: Depth texture is not available for this pass.' );
 
 			}
 
