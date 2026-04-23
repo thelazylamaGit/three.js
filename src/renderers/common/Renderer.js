@@ -2510,6 +2510,7 @@ class Renderer {
 			this._animation.dispose();
 			this._objects.dispose();
 			this._geometries.dispose();
+			this._attributes.dispose();
 			this._pipelines.dispose();
 			this._nodes.dispose();
 			this._bindings.dispose();
@@ -3029,6 +3030,8 @@ class Renderer {
 	copyBufferToBuffer( srcAttribute, dstAttribute, size = null, srcOffset = 0, dstOffset = 0 ) {
 
 		this.backend.copyBufferToBuffer( srcAttribute, dstAttribute, size, srcOffset, dstOffset );
+
+		this._inspector.copyBufferToBuffer( srcAttribute, dstAttribute, size, srcOffset, dstOffset );
 
 	}
 

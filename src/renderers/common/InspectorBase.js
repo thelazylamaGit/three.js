@@ -146,6 +146,17 @@ class InspectorBase extends EventDispatcher {
 	 */
 	copyFramebufferToTexture( /*framebufferTexture*/ ) { }
 
+	/**
+	 * Called when a buffer copy operation is performed.
+	 *
+	 * @param {BufferAttribute} srcAttribute - The source buffer attribute.
+	 * @param {BufferAttribute} dstAttribute - The destination buffer attribute.
+	 * @param {?number} [size=null] - The number of bytes copied. If `null`, the entire source buffer was copied.
+	 * @param {number} [srcOffset=0] - The source offset in bytes.
+	 * @param {number} [dstOffset=0] - The destination offset in bytes.
+	 */
+	copyBufferToBuffer( /*srcAttribute, dstAttribute, size, srcOffset, dstOffset*/ ) { }
+
 }
 
 export default InspectorBase;
