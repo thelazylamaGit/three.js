@@ -2111,7 +2111,7 @@ class WebGLBackend extends Backend {
 
 		const srcGPU = srcData.bufferGPU;
 		const dstGPU = dstData.bufferGPU;
-		const byteLength = size === null ? srcGPU.size : size;
+		const byteLength = size === null ? srcGPU.byteLength : size;
 
 		const prevRead = gl.getParameter( gl.COPY_READ_BUFFER_BINDING );
 		const prevWrite = gl.getParameter( gl.COPY_WRITE_BUFFER_BINDING );

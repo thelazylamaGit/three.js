@@ -19,6 +19,7 @@ import Lighting from './Lighting.js';
 import XRManager from './XRManager.js';
 import InspectorBase from './InspectorBase.js';
 import CanvasTarget from './CanvasTarget.js';
+import { AttributeType } from './Constants.js';
 
 import NodeMaterial from '../../materials/nodes/NodeMaterial.js';
 
@@ -3028,6 +3029,18 @@ class Renderer {
 	 * @param {number} [dstOffset=0] - The destination offset in bytes.
 	 */
 	copyBufferToBuffer( srcAttribute, dstAttribute, size = null, srcOffset = 0, dstOffset = 0 ) {
+
+		const getAttributeType = ( attribute ) => {
+
+			if ( attribute.isIndirectStorageBufferAttribute ) return AttributeType.INDIRECT;
+			if ( attribute.isStorageBufferAttribute || attribute.isStorageInstancedBufferAttribute ) return AttributeType.STORAGE;
+
+			return AttributeType.VERTEX;
+
+		};
+
+		this._attributes.update( srcAttribute, getAttributeType( srcAttribute ) );
+		this._attributes.update( dstAttribute, getAttributeType( dstAttribute ) );
 
 		this.backend.copyBufferToBuffer( srcAttribute, dstAttribute, size, srcOffset, dstOffset );
 
