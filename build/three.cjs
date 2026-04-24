@@ -59801,6 +59801,12 @@ function WebGLAttributes( gl ) {
 
 		if ( data ) {
 
+			if ( attribute.removeEventListener !== undefined ) {
+
+				attribute.removeEventListener( 'dispose', data.onDispose );
+
+			}
+
 			gl.deleteBuffer( data.buffer );
 
 			buffers.delete( attribute );
@@ -59836,7 +59842,16 @@ function WebGLAttributes( gl ) {
 
 		if ( data === undefined ) {
 
-			buffers.set( attribute, createBuffer( attribute, bufferType ) );
+			const bufferData = createBuffer( attribute, bufferType );
+
+			if ( attribute.isBufferAttribute === true ) {
+
+				bufferData.onDispose = () => remove( attribute );
+				attribute.addEventListener( 'dispose', bufferData.onDispose );
+
+			}
+
+			buffers.set( attribute, bufferData );
 
 		} else if ( data.version < attribute.version ) {
 

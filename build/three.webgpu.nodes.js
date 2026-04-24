@@ -11597,6 +11597,17 @@ class InspectorBase extends EventDispatcher {
 	 */
 	copyFramebufferToTexture( /*framebufferTexture*/ ) { }
 
+	/**
+	 * Called when a buffer copy operation is performed.
+	 *
+	 * @param {BufferAttribute} srcAttribute - The source buffer attribute.
+	 * @param {BufferAttribute} dstAttribute - The destination buffer attribute.
+	 * @param {?number} [size=null] - The number of bytes copied. If `null`, the entire source buffer was copied.
+	 * @param {number} [srcOffset=0] - The source offset in bytes.
+	 * @param {number} [dstOffset=0] - The destination offset in bytes.
+	 */
+	copyBufferToBuffer( /*srcAttribute, dstAttribute, size, srcOffset, dstOffset*/ ) { }
+
 }
 
 /**
@@ -30667,6 +30678,13 @@ class Attributes extends DataMap {
 
 		if ( attributeData !== null ) {
 
+
+			if ( attributeData.onDispose !== undefined ) {
+
+				attribute.removeEventListener( 'dispose', attributeData.onDispose );
+
+			}
+
 			this.backend.destroyAttribute( attribute );
 
 			this.info.destroyAttribute( attribute );
@@ -30687,6 +30705,7 @@ class Attributes extends DataMap {
 	update( attribute, type ) {
 
 		const data = this.get( attribute );
+		const bufferAttribute = this._getBufferAttribute( attribute );
 
 		if ( data.version === undefined ) {
 
@@ -30712,11 +30731,16 @@ class Attributes extends DataMap {
 
 			}
 
-			data.version = this._getBufferAttribute( attribute ).version;
+			if ( attribute.isBufferAttribute === true ) {
+
+				data.onDispose = () => this.delete( attribute );
+				attribute.addEventListener( 'dispose', data.onDispose );
+
+			}
+
+			data.version = bufferAttribute.version;
 
 		} else {
-
-			const bufferAttribute = this._getBufferAttribute( attribute );
 
 			if ( data.version < bufferAttribute.version || bufferAttribute.usage === DynamicDrawUsage ) {
 
@@ -60383,6 +60407,7 @@ class Renderer {
 			this._animation.dispose();
 			this._objects.dispose();
 			this._geometries.dispose();
+			this._attributes.dispose();
 			this._pipelines.dispose();
 			this._nodes.dispose();
 			this._bindings.dispose();
@@ -60914,6 +60939,8 @@ class Renderer {
 		this._attributes.update( dstAttribute, getAttributeType( dstAttribute ) );
 
 		this.backend.copyBufferToBuffer( srcAttribute, dstAttribute, size, srcOffset, dstOffset );
+
+		this._inspector.copyBufferToBuffer( srcAttribute, dstAttribute, size, srcOffset, dstOffset );
 
 	}
 
