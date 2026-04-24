@@ -4,14 +4,13 @@ import NodeBuilderState from './NodeBuilderState.js';
 import NodeMaterial from '../../../materials/nodes/NodeMaterial.js';
 import { cubeMapNode } from '../../../nodes/utils/CubeMapNode.js';
 import { NodeFrame, StackTrace } from '../../../nodes/Nodes.js';
-import { objectGroup, renderGroup, frameGroup, cubeTexture, texture, texture3D, vec3, fog, rangeFogFactor, densityFogFactor, reference, pmremTexture, screenUV } from '../../../nodes/TSL.js';
+import { renderGroup, cubeTexture, texture, fog, rangeFogFactor, densityFogFactor, reference, pmremTexture, screenUV } from '../../../nodes/TSL.js';
 import { builtin } from '../../../nodes/accessors/BuiltinNode.js';
 
 import { CubeUVReflectionMapping, EquirectangularReflectionMapping, EquirectangularRefractionMapping } from '../../../constants.js';
 import { hashArray } from '../../../nodes/core/NodeUtils.js';
 import { error } from '../../../utils.js';
 
-const _outputNodeMap = new WeakMap();
 const _chainKeys = [];
 const _cacheKeyValues = [];
 
@@ -111,51 +110,6 @@ class NodeManager extends DataMap {
 	updateGroup( nodeUniformsGroup ) {
 
 		const groupNode = nodeUniformsGroup.groupNode;
-		const name = groupNode.name;
-
-		// objectGroup is always updated
-
-		if ( name === objectGroup.name ) return true;
-
-		// renderGroup is updated once per render/compute call
-
-		if ( name === renderGroup.name ) {
-
-			const uniformsGroupData = this.get( nodeUniformsGroup );
-			const renderId = this.nodeFrame.renderId;
-
-			if ( uniformsGroupData.renderId !== renderId ) {
-
-				uniformsGroupData.renderId = renderId;
-
-				return true;
-
-			}
-
-			return false;
-
-		}
-
-		// frameGroup is updated once per frame
-
-		if ( name === frameGroup.name ) {
-
-			const uniformsGroupData = this.get( nodeUniformsGroup );
-			const frameId = this.nodeFrame.frameId;
-
-			if ( uniformsGroupData.frameId !== frameId ) {
-
-				uniformsGroupData.frameId = frameId;
-
-				return true;
-
-			}
-
-			return false;
-
-		}
-
-		// other groups are updated just when groupNode.needsUpdate is true
 
 		_chainKeys[ 0 ] = groupNode;
 		_chainKeys[ 1 ] = nodeUniformsGroup;
@@ -459,11 +413,16 @@ class NodeManager extends DataMap {
 		if ( object.isRenderObject ) {
 
 			const nodeBuilderState = this.get( object ).nodeBuilderState;
-			nodeBuilderState.usedTimes --;
 
-			if ( nodeBuilderState.usedTimes === 0 ) {
+			if ( nodeBuilderState !== undefined ) {
 
-				this.nodeBuilderCache.delete( this.getForRenderCacheKey( object ) );
+				nodeBuilderState.usedTimes --;
+
+				if ( nodeBuilderState.usedTimes === 0 ) {
+
+					this.nodeBuilderCache.delete( this.getForRenderCacheKey( object ) );
+
+				}
 
 			}
 
@@ -895,21 +854,6 @@ class NodeManager extends DataMap {
 	}
 
 	/**
-	 * Checks if the output configuration (tone mapping and color space) for
-	 * the given target has changed.
-	 *
-	 * @param {Texture} outputTarget - The output target.
-	 * @return {boolean} Whether the output configuration has changed or not.
-	 */
-	hasOutputChange( outputTarget ) {
-
-		const cacheKey = _outputNodeMap.get( outputTarget );
-
-		return cacheKey !== this.getOutputCacheKey();
-
-	}
-
-	/**
 	 * Returns a node that represents the output configuration (tone mapping and
 	 * color space) for the current target.
 	 *
@@ -919,13 +863,10 @@ class NodeManager extends DataMap {
 	getOutputNode( outputTarget ) {
 
 		const renderer = this.renderer;
-		const cacheKey = this.getOutputCacheKey();
 
 		const output = outputTarget.isArrayTexture ?
-			texture3D( outputTarget, vec3( screenUV, builtin( 'gl_ViewID_OVR' ) ) ).renderOutput( renderer.toneMapping, renderer.currentColorSpace ) :
+			texture( outputTarget, screenUV ).depth( builtin( 'gl_ViewID_OVR' ) ).renderOutput( renderer.toneMapping, renderer.currentColorSpace ) :
 			texture( outputTarget, screenUV ).renderOutput( renderer.toneMapping, renderer.currentColorSpace );
-
-		_outputNodeMap.set( outputTarget, cacheKey );
 
 		return output;
 
@@ -992,7 +933,7 @@ class NodeManager extends DataMap {
 
 	/**
 	 * Triggers the call of `update()` methods
-	 * for all nodes of the given compute node.
+	 * for all nodes of the given render object.
 	 *
 	 * @param {RenderObject} renderObject - The render object.
 	 */

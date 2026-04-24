@@ -214,8 +214,8 @@ class PMREMGenerator {
 
 	/**
 	 * Generates a PMREM from an equirectangular texture, which can be either LDR
-	 * or HDR. The ideal input image size is 1k (1024 x 512),
-	 * as this matches best with the 256 x 256 cubemap output.
+	 * or HDR. The ideal input image size is 1k (1024 x 512), as this matches best
+	 * with the 256 x 256 cubemap output. The minimum supported resolution is 64 x 32.
 	 *
 	 * @param {Texture} equirectangular - The equirectangular texture to be converted.
 	 * @param {?RenderTarget} [renderTarget=null] - The render target to use.
@@ -265,8 +265,9 @@ class PMREMGenerator {
 
 	/**
 	 * Generates a PMREM from an cubemap texture, which can be either LDR
-	 * or HDR. The ideal input cube size is 256 x 256,
-	 * as this matches best with the 256 x 256 cubemap output.
+	 * or HDR. The ideal input cube size is 256 x 256, as this matches best
+	 * with the 256 x 256 cubemap output. The minimum supported resolution is
+	 * 16 x 16 per face.
 	 *
 	 * @param {Texture} cubemap - The cubemap texture to be converted.
 	 * @param {?RenderTarget} [renderTarget=null] - The render target to use.
@@ -410,7 +411,7 @@ class PMREMGenerator {
 
 		this._renderer.setRenderTarget( _oldTarget, _oldActiveCubeFace, _oldActiveMipmapLevel );
 		outputTarget.scissorTest = false;
-		_setViewport( outputTarget, 0, 0, outputTarget.width, outputTarget.height );
+		this._setViewport( outputTarget, 0, 0, outputTarget.width, outputTarget.height );
 
 	}
 
@@ -566,7 +567,7 @@ class PMREMGenerator {
 
 			const size = this._cubeSize;
 
-			_setViewport( cubeUVRenderTarget, col * size, i > 2 ? size : 0, size, size );
+			this._setViewport( cubeUVRenderTarget, col * size, i > 2 ? size : 0, size, size );
 
 			renderer.render( scene, cubeCamera );
 
@@ -608,9 +609,7 @@ class PMREMGenerator {
 		mesh.material = material;
 
 		const size = this._cubeSize;
-
-		_setViewport( cubeUVRenderTarget, 0, 0, 3 * size, 2 * size );
-
+		this._setViewport( cubeUVRenderTarget, 0, 0, 3 * size, 2 * size );
 		renderer.setRenderTarget( cubeUVRenderTarget );
 		renderer.render( mesh, _flatCamera );
 
@@ -678,7 +677,7 @@ class PMREMGenerator {
 		ggxUniforms.roughness.value = adjustedRoughness;
 		ggxUniforms.mipInt.value = _lodMax - lodIn; // Sample from input LOD
 
-		_setViewport( pingPongRenderTarget, x, y, 3 * outputSize, 2 * outputSize );
+		this._setViewport( pingPongRenderTarget, x, y, 3 * outputSize, 2 * outputSize );
 		renderer.setRenderTarget( pingPongRenderTarget );
 		renderer.render( ggxMesh, _flatCamera );
 
@@ -688,7 +687,7 @@ class PMREMGenerator {
 		ggxUniforms.roughness.value = 0.0; // Direct copy
 		ggxUniforms.mipInt.value = _lodMax - lodOut; // Read from the level we just wrote
 
-		_setViewport( cubeUVRenderTarget, x, y, 3 * outputSize, 2 * outputSize );
+		this._setViewport( cubeUVRenderTarget, x, y, 3 * outputSize, 2 * outputSize );
 		renderer.setRenderTarget( cubeUVRenderTarget );
 		renderer.render( ggxMesh, _flatCamera );
 
@@ -814,11 +813,28 @@ class PMREMGenerator {
 		const x = 3 * outputSize * ( lodOut > _lodMax - LOD_MIN ? lodOut - _lodMax + LOD_MIN : 0 );
 		const y = 4 * ( this._cubeSize - outputSize );
 
-		_setViewport( targetOut, x, y, 3 * outputSize, 2 * outputSize );
+		this._setViewport( targetOut, x, y, 3 * outputSize, 2 * outputSize );
 		renderer.setRenderTarget( targetOut );
 		renderer.render( blurMesh, _flatCamera );
 
 	}
+
+	_setViewport( target, x, y, width, height ) {
+
+		if ( this._renderer.isWebGLRenderer ) {
+
+			target.viewport.set( x, target.height - height - y, width, height );
+			target.scissor.set( x, target.height - height - y, width, height );
+
+		} else {
+
+			target.viewport.set( x, y, width, height );
+			target.scissor.set( x, y, width, height );
+
+		}
+
+	}
+
 
 }
 
@@ -922,13 +938,6 @@ function _createRenderTarget( width, height ) {
 	cubeUVRenderTarget.texture.isPMREMTexture = true;
 	cubeUVRenderTarget.scissorTest = true;
 	return cubeUVRenderTarget;
-
-}
-
-function _setViewport( target, x, y, width, height ) {
-
-	target.viewport.set( x, y, width, height );
-	target.scissor.set( x, y, width, height );
 
 }
 

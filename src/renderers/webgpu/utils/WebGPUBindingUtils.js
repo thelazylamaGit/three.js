@@ -190,6 +190,8 @@ class WebGPUBindingUtils {
 		const array = binding.buffer; // cpu
 		const buffer = backend.get( binding ).buffer; // gpu
 
+		if ( buffer === undefined ) return; // see #33461
+
 		const updateRanges = binding.updateRanges;
 
 		if ( updateRanges.length === 0 ) {
@@ -282,43 +284,6 @@ class WebGPUBindingUtils {
 			if ( binding.isUniformBuffer ) {
 
 				const bindingData = backend.get( binding );
-
-				if ( bindingData.buffer === undefined ) {
-
-					const byteLength = binding.byteLength;
-
-					const usage = GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST;
-
-					const visibilities = [];
-					if ( binding.visibility & GPUShaderStage.VERTEX ) {
-
-						visibilities.push( 'vertex' );
-
-					}
-
-					if ( binding.visibility & GPUShaderStage.FRAGMENT ) {
-
-						visibilities.push( 'fragment' );
-
-					}
-
-					if ( binding.visibility & GPUShaderStage.COMPUTE ) {
-
-						visibilities.push( 'compute' );
-
-					}
-
-					const bufferVisibility = `(${visibilities.join( ',' )})`;
-
-					const bufferGPU = device.createBuffer( {
-						label: `bindingBuffer${binding.id}_${binding.name}_${bufferVisibility}`,
-						size: byteLength,
-						usage: usage
-					} );
-
-					bindingData.buffer = bufferGPU;
-
-				}
 
 				entriesGPU.push( { binding: bindingPoint, resource: { buffer: bindingData.buffer } } );
 
@@ -520,7 +485,7 @@ class WebGPUBindingUtils {
 
 					}
 
-				} else if ( binding.texture.isDataTexture || binding.texture.isDataArrayTexture || binding.texture.isData3DTexture ) {
+				} else if ( binding.texture.isDataTexture || binding.texture.isDataArrayTexture || binding.texture.isData3DTexture || binding.texture.isStorageTexture ) {
 
 					const type = binding.texture.type;
 

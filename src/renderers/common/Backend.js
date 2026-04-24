@@ -402,6 +402,22 @@ class Backend {
 	createStorageAttribute( /*attribute*/ ) { }
 
 	/**
+	 * Creates a uniform buffer.
+	 *
+	 * @abstract
+	 * @param {Buffer} uniformBuffer - The uniform buffer.
+	 */
+	createUniformBuffer( /*uniformBuffer*/ ) { }
+
+	/**
+	 * Destroys a uniform buffer.
+	 *
+	 * @abstract
+	 * @param {Buffer} uniformBuffer - The uniform buffer.
+	 */
+	destroyUniformBuffer( /*uniformBuffer*/ ) { }
+
+	/**
 	 * Updates the GPU buffer of a shader attribute.
 	 *
 	 * @abstract
@@ -615,14 +631,6 @@ class Backend {
 	 * @return {boolean} Whether the feature is supported or not.
 	 */
 	hasFeature( /*name*/ ) {}
-
-	/**
-	 * Returns the maximum anisotropy texture filtering value.
-	 *
-	 * @abstract
-	 * @return {number} The maximum anisotropy texture filtering value.
-	 */
-	getMaxAnisotropy() {}
 
 	/**
 	 * Returns the drawing buffer size.
