@@ -2601,7 +2601,7 @@ class Renderer {
 
 			this.info.dispose();
 			this.backend.dispose();
-
+			this._attributes.dispose();
 			this._animation.dispose();
 			this._objects.dispose();
 			this._geometries.dispose();
