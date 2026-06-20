@@ -1,4 +1,4 @@
-import { LightsNode } from '../../nodes/Nodes.js';
+import LightsNode from '../../nodes/lighting/LightsNode.js';
 
 const _defaultLights = /*@__PURE__*/ new LightsNode();
 const _weakMap = /*@__PURE__*/ new WeakMap();

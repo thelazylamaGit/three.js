@@ -1,6 +1,7 @@
 import NodeMaterial from '../../materials/nodes/NodeMaterial.js';
 import { ColorManagement } from '../../math/ColorManagement.js';
-import { vec4, renderOutput } from '../../nodes/TSL.js';
+import { vec4 } from '../../nodes/tsl/TSLBase.js';
+import { renderOutput } from '../../nodes/display/RenderOutputNode.js';
 import { NoToneMapping } from '../../constants.js';
 import QuadMesh from '../../renderers/common/QuadMesh.js';
 import { warnOnce } from '../../utils.js';

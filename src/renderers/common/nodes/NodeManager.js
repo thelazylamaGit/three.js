@@ -3,8 +3,15 @@ import ChainMap from '../ChainMap.js';
 import NodeBuilderState from './NodeBuilderState.js';
 import NodeMaterial from '../../../materials/nodes/NodeMaterial.js';
 import { cubeMapNode } from '../../../nodes/utils/CubeMapNode.js';
-import { NodeFrame, StackTrace } from '../../../nodes/Nodes.js';
-import { renderGroup, cubeTexture, texture, fog, rangeFogFactor, densityFogFactor, reference, pmremTexture, screenUV } from '../../../nodes/TSL.js';
+import NodeFrame from '../../../nodes/core/NodeFrame.js';
+import StackTrace from '../../../nodes/core/StackTrace.js';
+import { renderGroup } from '../../../nodes/core/UniformGroupNode.js';
+import { cubeTexture } from '../../../nodes/accessors/CubeTextureNode.js';
+import { texture } from '../../../nodes/accessors/TextureNode.js';
+import { fog, rangeFogFactor, densityFogFactor } from '../../../nodes/fog/Fog.js';
+import { reference } from '../../../nodes/accessors/ReferenceNode.js';
+import { pmremTexture } from '../../../nodes/pmrem/PMREMNode.js';
+import { screenUV } from '../../../nodes/display/ScreenNode.js';
 import { builtin } from '../../../nodes/accessors/BuiltinNode.js';
 
 import { CubeUVReflectionMapping, EquirectangularReflectionMapping, EquirectangularRefractionMapping } from '../../../constants.js';
