@@ -62,7 +62,7 @@ class ConditionalNode extends Node {
 		 *
 		 * @type {boolean}
 		 */
-		this.uniformFlow = elseNode !== null;
+		this.defaultUniformFlow = elseNode !== null;
 
 	}
 
@@ -120,7 +120,7 @@ class ConditionalNode extends Node {
 
 		//
 
-		const isUniformFlow = builder.context.uniformFlow ?? this.uniformFlow;
+		const isUniformFlow = builder.context.uniformFlow ?? this.defaultUniformFlow;
 
 		const properties = builder.getNodeProperties( this );
 		properties.condNode = condNode;
@@ -139,7 +139,7 @@ class ConditionalNode extends Node {
 
 		const functionNode = builder.currentFunctionNode;
 		const needsOutput = output !== 'void';
-		const isUniformFlow = builder.context.uniformFlow ?? this.uniformFlow;
+		const isUniformFlow = builder.context.uniformFlow ?? this.defaultUniformFlow;
 
 		if ( isUniformFlow && elseNode !== null ) {
 
