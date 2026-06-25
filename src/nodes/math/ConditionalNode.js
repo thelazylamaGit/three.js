@@ -57,6 +57,13 @@ class ConditionalNode extends Node {
 		 */
 		this.elseNode = elseNode;
 
+		/**
+		 * Whether this conditional should generate as a uniform-flow expression.
+		 *
+		 * @type {boolean}
+		 */
+		this.uniformFlow = elseNode !== null;
+
 	}
 
 	/**
@@ -80,11 +87,11 @@ class ConditionalNode extends Node {
 
 		}
 
-		const ifType = ifNode.getNodeType( builder );
+		const ifType = builder.getVectorType( ifNode.getNodeType( builder ) );
 
 		if ( elseNode !== null ) {
 
-			const elseType = elseNode.getNodeType( builder );
+			const elseType = builder.getVectorType( elseNode.getNodeType( builder ) );
 
 			if ( builder.getTypeLength( elseType ) > builder.getTypeLength( ifType ) ) {
 
@@ -113,7 +120,7 @@ class ConditionalNode extends Node {
 
 		//
 
-		const isUniformFlow = builder.context.uniformFlow;
+		const isUniformFlow = builder.context.uniformFlow ?? this.uniformFlow;
 
 		const properties = builder.getNodeProperties( this );
 		properties.condNode = condNode;
@@ -128,35 +135,56 @@ class ConditionalNode extends Node {
 
 		const nodeData = builder.getDataFromNode( this );
 
+		const { condNode, ifNode, elseNode } = builder.getNodeProperties( this );
+
+		const functionNode = builder.currentFunctionNode;
+		const needsOutput = output !== 'void';
+		const isUniformFlow = builder.context.uniformFlow ?? this.uniformFlow;
+
+		if ( isUniformFlow && elseNode !== null ) {
+
+			const expressionType = builder.getVectorType( type );
+
+			if ( nodeData.nodeProperty !== undefined ) {
+
+				return builder.format( nodeData.nodeProperty, expressionType, output );
+
+			}
+
+			const nodeSnippet = condNode.build( builder, 'bool' );
+			const ifSnippet = ifNode.build( builder, expressionType );
+			const elseSnippet = elseNode.build( builder, expressionType );
+
+			const mathSnippet = builder.getTernary( nodeSnippet, ifSnippet, elseSnippet );
+
+			if ( needsOutput && nodeData.usageCount > 1 ) {
+
+				const nodeVar = builder.getVarFromNode( this, null, expressionType );
+				const propertyName = builder.getPropertyName( nodeVar );
+
+				builder.addLineFlowCode( `${ propertyName } = ${ mathSnippet }`, this );
+
+				nodeData.nodeProperty = propertyName;
+
+				return builder.format( propertyName, expressionType, output );
+
+			}
+
+			return builder.format( mathSnippet, expressionType, output );
+
+		}
+
 		if ( nodeData.nodeProperty !== undefined ) {
 
 			return nodeData.nodeProperty;
 
 		}
 
-		const { condNode, ifNode, elseNode } = builder.getNodeProperties( this );
-
-		const functionNode = builder.currentFunctionNode;
-		const needsOutput = output !== 'void';
 		const nodeProperty = needsOutput ? property( type ).build( builder ) : '';
 
 		nodeData.nodeProperty = nodeProperty;
 
 		const nodeSnippet = condNode.build( builder, 'bool' );
-		const isUniformFlow = builder.context.uniformFlow;
-
-		if ( isUniformFlow && elseNode !== null ) {
-
-			const ifSnippet = ifNode.build( builder, type );
-			const elseSnippet = elseNode.build( builder, type );
-
-			const mathSnippet = builder.getTernary( nodeSnippet, ifSnippet, elseSnippet );
-
-			// TODO: If node property already exists return something else
-
-			return builder.format( mathSnippet, type, output );
-
-		}
 
 		builder.addFlowCode( `\n${ builder.tab }if ( ${ nodeSnippet } ) {\n\n` ).addFlowTab();
 
