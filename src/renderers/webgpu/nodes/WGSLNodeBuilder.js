@@ -247,6 +247,14 @@ class WGSLNodeBuilder extends NodeBuilder {
 		 */
 		this.allowGlobalVariables = true;
 
+		/**
+		 * Whether the current compute shader uses `instanceIndex`.
+		 *
+		 * @type {boolean}
+		 * @default false
+		 */
+		this.needsComputeInstanceIndex = false;
+
 	}
 
 	/**
@@ -1243,6 +1251,37 @@ class WGSLNodeBuilder extends NodeBuilder {
 	}
 
 	/**
+	 * Returns a compute builtin variable as a native shader string.
+	 *
+	 * @param {string} property - The property name.
+	 * @return {string} The property name.
+	 */
+	getComputeBuiltin( property ) {
+
+		switch ( property ) {
+
+			case 'globalId':
+				return this.getBuiltin( 'global_invocation_id', 'globalId', 'vec3<u32>', 'attribute' );
+
+			case 'workgroupId':
+				return this.getBuiltin( 'workgroup_id', 'workgroupId', 'vec3<u32>', 'attribute' );
+
+			case 'localId':
+				return this.getBuiltin( 'local_invocation_id', 'localId', 'vec3<u32>', 'attribute' );
+
+			case 'numWorkgroups':
+				return this.getBuiltin( 'num_workgroups', 'numWorkgroups', 'vec3<u32>', 'attribute' );
+
+			case 'subgroupSize':
+				return this.getSubgroupSize();
+
+		}
+
+		return property;
+
+	}
+
+	/**
 	 * Returns `true` if the given builtin is defined in the given shader stage.
 	 *
 	 * @param {string} name - The builtin name.
@@ -1323,6 +1362,14 @@ ${ flowData.code }
 		if ( this.shaderStage === 'vertex' ) {
 
 			return this.getBuiltin( 'instance_index', 'instanceIndex', 'u32', 'attribute' );
+
+		}
+
+		if ( this.shaderStage === 'compute' ) {
+
+			this.needsComputeInstanceIndex = true;
+			this.getComputeBuiltin( 'globalId' );
+			this.getComputeBuiltin( 'numWorkgroups' );
 
 		}
 
@@ -1633,22 +1680,6 @@ ${ flowData.code }
 	getAttributes( shaderStage ) {
 
 		const snippets = [];
-
-		if ( shaderStage === 'compute' ) {
-
-			this.getBuiltin( 'global_invocation_id', 'globalId', 'vec3<u32>', 'attribute' );
-			this.getBuiltin( 'workgroup_id', 'workgroupId', 'vec3<u32>', 'attribute' );
-			this.getBuiltin( 'local_invocation_id', 'localId', 'vec3<u32>', 'attribute' );
-			this.getBuiltin( 'num_workgroups', 'numWorkgroups', 'vec3<u32>', 'attribute' );
-
-			if ( this.renderer.hasFeature( 'subgroups' ) ) {
-
-				this.enableDirective( 'subgroups', shaderStage );
-				this.getBuiltin( 'subgroup_size', 'subgroupSize', 'u32', 'attribute' );
-
-			}
-
-		}
 
 		if ( shaderStage === 'vertex' || shaderStage === 'compute' ) {
 
@@ -2438,13 +2469,17 @@ fn main( ${shaderData.varyings} ) -> ${shaderData.returnType} {
 	_getWGSLComputeCode( shaderData, workgroupSize ) {
 
 		const [ workgroupSizeX, workgroupSizeY, workgroupSizeZ ] = workgroupSize;
+		const instanceIndexDeclaration = this.needsComputeInstanceIndex ? 'var<private> instanceIndex : u32;' : '';
+		const instanceIndexAssignment = this.needsComputeInstanceIndex ? `instanceIndex = globalId.x
+		+ globalId.y * ( ${ workgroupSizeX } * numWorkgroups.x )
+		+ globalId.z * ( ${ workgroupSizeX } * numWorkgroups.x ) * ( ${ workgroupSizeY } * numWorkgroups.y );` : '';
 
 		return `${ this.getSignature() }
 // directives
 ${ shaderData.directives }
 
 // system
-var<private> instanceIndex : u32;
+${ instanceIndexDeclaration }
 
 // locals
 ${ shaderData.scopedArrays }
@@ -2468,9 +2503,7 @@ fn main( ${ shaderData.attributes } ) {
 	${ this.allowGlobalVariables ? '' : shaderData.vars }
 
 	// system
-	instanceIndex = globalId.x
-		+ globalId.y * ( ${ workgroupSizeX } * numWorkgroups.x )
-		+ globalId.z * ( ${ workgroupSizeX } * numWorkgroups.x ) * ( ${ workgroupSizeY } * numWorkgroups.y );
+	${ instanceIndexAssignment }
 
 	// flow
 	${ shaderData.flow }

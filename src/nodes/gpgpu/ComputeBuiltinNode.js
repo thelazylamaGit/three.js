@@ -106,7 +106,9 @@ class ComputeBuiltinNode extends Node {
 
 		if ( builder.shaderStage === 'compute' ) {
 
-			return builder.format( builtinName, nodeType, output );
+			const propertyName = builder.getComputeBuiltin ? builder.getComputeBuiltin( builtinName ) : builtinName;
+
+			return builder.format( propertyName, nodeType, output );
 
 		} else {
 
